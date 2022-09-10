@@ -49,6 +49,7 @@ Temporary Items
 
 # Built binaries
 beach
+dist/
 
 # Utility Scripts
 *.sh
