@@ -10,7 +10,7 @@ import (
 var flgVersion bool
 var flgDebug bool
 
-// Built at release time go build -ldflags="-X 'github.com/kevinoula/beach/main.Version=v0.1'"
+// Built at release time go build -ldflags="-X 'main.Version=v0.1'"
 var (
 	Version = "dev"     // Version of the app.
 	Commit  = "none"    // Commit hash.
