@@ -15,14 +15,23 @@ import (
 	"strings"
 )
 
+// ShellCollection is a stored collection of shell configurations.
 type ShellCollection struct {
+	// Shells is a map containing previously stored SSH credentials.
 	Shells map[string]map[string]string `json:"shells"`
 }
 
+// Collection is a general object that stores a collection of shells and the source-of-truth file for the SSH
+// configurations.
 type Collection struct {
+	// ShellCollection is a reference to a Collection's store of SSH configuration map.
 	ShellCollection ShellCollection
-	FileName        string
-	file            *os.File
+
+	// FileName is a reference to the name of the file which serves as the source-of-truth for all SSH configurations
+	FileName string
+
+	// file is the file object that is created and read using the OS library.
+	file *os.File
 }
 
 // RetrieveOrCreateFile looks to see if the file already exists. If it does not, it creates it as an empty

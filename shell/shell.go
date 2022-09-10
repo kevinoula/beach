@@ -11,17 +11,34 @@ import (
 	"os"
 )
 
+// SSH is an object which runs a single SSH session for a given user.
 type SSH struct {
+	// Username is the username provided to sign onto an SSH session.
 	Username string
+
+	// Password is the username provided to sign onto an SSH session.
 	Password string
+
+	// Host is the username provided to sign onto an SSH session.
 	Hostname string
-	client   *ssh.Client
-	session  *ssh.Session
-	stdin    io.WriteCloser
-	stdout   io.Reader
-	stderr   io.Reader
+
+	// client is the generated SSH client that handles the TLS handshake between the user and remote server.
+	client *ssh.Client
+
+	// session is the generated SSH session that delivers user input and remote server output.
+	session *ssh.Session
+
+	// stdin is the IO writer for the SSH session where the user sends inputs to.
+	stdin io.WriteCloser
+
+	// stdout is the IO reader for the SSH session which reads the remote server output.
+	stdout io.Reader
+
+	// stderr is the IO reader for the SSH session which reads errors from the remote server output
+	stderr io.Reader
 }
 
+// CreateSession creates all the necessary components to begin an SSH session with a remote server.
 func (s *SSH) CreateSession() error {
 	decodedPass, _ := base64.StdEncoding.DecodeString(s.Password)
 	trimmedPass := bytes.TrimSpace(decodedPass)
@@ -31,7 +48,7 @@ func (s *SSH) CreateSession() error {
 		Auth: []ssh.AuthMethod{ssh.Password(string(trimmedPass))},
 	}
 
-	sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+	sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey() // TODO validate host key
 	client, err := ssh.Dial("tcp", s.Hostname+":22", sshConfig)
 	if err != nil {
 		return err
@@ -48,6 +65,7 @@ func (s *SSH) CreateSession() error {
 	return nil
 }
 
+// StartSession uses the SSH client and session to begin serving input and outputs from the user to the remote server and back.
 func (s *SSH) StartSession() error {
 	log.Printf("Attempting to SSH into %s...\n", s.Hostname)
 	err := s.CreateSession()
