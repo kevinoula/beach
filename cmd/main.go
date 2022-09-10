@@ -1,133 +1,55 @@
 package main
 
 import (
-	"bufio"
+	"flag"
 	"fmt"
-	"golang.org/x/crypto/ssh"
-	"io"
-	"log"
-	"os"
+	"github.com/kevinoula/beach/collection"
+	log "github.com/kevinoula/beach/log"
 )
 
+var flgVersion bool
+var flgDebug bool
+
+// Built at release time go build -ldflags="-X 'github.com/kevinoula/beach/main.Version=v0.1'"
 var (
-	hostname string
-	username string
-	port     string
+	Version = "dev"     // Version of the app.
+	Commit  = "none"    // Commit hash.
+	Date    = "unknown" // Date of the build.
+	BuiltBy = "unknown" // The author or builder.
 )
-
-func connectToHost(user, host string) (*ssh.Client, *ssh.Session, error) {
-	var pass string
-	fmt.Print("Password: ")
-	fmt.Scanf("%s\n", &pass)
-
-	sshConfig := &ssh.ClientConfig{
-		User: user,
-		Auth: []ssh.AuthMethod{ssh.Password(pass)},
-	}
-
-	sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
-	client, err := ssh.Dial("tcp", host, sshConfig)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	session, err := client.NewSession()
-	if err != nil {
-		client.Close()
-		return nil, nil, err
-	}
-
-	return client, session, nil
-}
 
 func main() {
-	hostname = ""
-	username = ""
-	port = "22"
+	// Init
+	flag.BoolVar(&flgVersion, "version", false, "print software version")
+	flag.BoolVar(&flgVersion, "v", false, "print software version")
+	flag.BoolVar(&flgDebug, "debug", false, "run in debug mode")
+	flag.BoolVar(&flgDebug, "d", false, "run in debug mode")
+	flag.Parse()
 
-	log.Printf("Attempting to SSH into %s...\n", hostname)
-	c, s, err := connectToHost(username, hostname+":"+port)
-	defer c.Close()
-	if err != nil {
-		log.Fatalf("error connecting to host: %v\n", err)
+	if flgVersion {
+		fmt.Println(Version)
+		return
 	}
 
-	var stdin io.WriteCloser
-	var stdout, stderr io.Reader
-	defer s.Close()
+	log.Init(log.LoggingConfig{EnableDebug: flgDebug})
+	log.Info.Printf("Beach CLI version %s (%.8s) built on %s by %s", Version, Commit, Date, BuiltBy)
 
-	stdin, err = s.StdinPipe()
-	if err != nil {
-		log.Fatalf("error connecting stdin to pipe: %v\n", err)
-	}
+	// See past shells, connect to a new shell, or exit
+	coll := collection.InitCollection()
+	log.Debug.Printf("New collection: %v\n", coll)
 
-	stdout, err = s.StdoutPipe()
-	if err != nil {
-		log.Fatalf("error connecting stdout to pipe: %v\n", err)
-	}
+	// Connect to a new shell
+	var hostname string
+	fmt.Println("Enter a hostname to connect to:")
+	_, _ = fmt.Scanf("%s", &hostname)
 
-	stderr, err = s.StderrPipe()
-	if err != nil {
-		log.Fatalf("error connecting stdout to pipe: %v\n", err)
-	}
+	var username string
+	fmt.Println("Enter a username:")
+	_, _ = fmt.Scanf("%s", &username)
 
-	// go routine to pass stdin to shell stdin
-	wr := make(chan []byte, 10)
-	go func() {
-		for {
-			select {
-			case d := <-wr:
-				_, err := stdin.Write(d)
-				if err != nil {
-					fmt.Printf("error writing to stdin: %v\n", err)
-					break
-				}
-			}
-		}
+	var password string
+	fmt.Println("Enter a password:")
+	_, _ = fmt.Scanf("%s", &password)
 
-	}()
-
-	// go routine to scan shell stdout
-	go func() {
-		scanner := bufio.NewScanner(stdout)
-		for {
-			if tkn := scanner.Scan(); tkn {
-				rcv := scanner.Bytes()
-				raw := make([]byte, len(rcv))
-				copy(raw, rcv)
-				fmt.Println(string(raw))
-			} else if scanner.Err() != nil {
-				fmt.Printf("error scanning: %v\n", scanner.Err())
-			} else {
-				fmt.Printf("\nio.EOF")
-				break
-			}
-		}
-	}()
-
-	// go routine to scan stderr
-	go func() {
-		scanner := bufio.NewScanner(stderr)
-		for scanner.Scan() {
-			fmt.Println(scanner.Text())
-		}
-	}()
-
-	// Open SSH session
-	s.Shell()
-
-	for {
-
-		fmt.Printf("%s@%s $ ", username, hostname)
-		scanner := bufio.NewScanner(os.Stdin)
-		scanner.Scan()
-		text := scanner.Text()
-		if text == "exit" {
-			return
-		}
-		wr <- []byte(text + "\n")
-
-	}
-
-	return
+	// Add to collection
 }
