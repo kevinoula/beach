@@ -54,8 +54,15 @@ func (s *SSH) StartSession() error {
 	if err != nil {
 		return fmt.Errorf("error connecting to host: %v\n", err)
 	}
-	defer s.client.Close()
-	defer s.session.Close()
+
+	// Defer closing client and session
+	defer func(client *ssh.Client) {
+		_ = client.Close()
+	}(s.client)
+
+	defer func(session *ssh.Session) {
+		_ = session.Close()
+	}(s.session)
 
 	s.stdin, err = s.session.StdinPipe()
 	if err != nil {
