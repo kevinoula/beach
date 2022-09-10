@@ -1,0 +1,35 @@
+github_urls:
+  api: https://github.com/api/v3/
+  upload: https://github.com/api/uploads/
+  download: https://github.com/
+  skip_tls_verify: false
+before:
+  hooks:
+    - git config --global --replace-all url.git@github.com:.insteadOf https://github.com/
+    - go mod tidy
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    ldflags:
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.Commit}} -X main.Date={{.Date}} -X main.BuiltBy=goreleaser
+    main: ./cmd
+    binary: beach
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      amd64: x86_64
+      windows: Windows
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incminor .Version }}"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
