@@ -36,20 +36,6 @@ func main() {
 
 	// See past shells, connect to a new shell, or exit
 	coll := collection.InitCollection()
-	log.Debug.Printf("New collection: %v\n", coll)
-
-	// Connect to a new shell
-	var hostname string
-	fmt.Println("Enter a hostname to connect to:")
-	_, _ = fmt.Scanf("%s", &hostname)
-
-	var username string
-	fmt.Println("Enter a username:")
-	_, _ = fmt.Scanf("%s", &username)
-
-	var password string
-	fmt.Println("Enter a password:")
-	_, _ = fmt.Scanf("%s", &password)
-
-	// Add to collection
+	log.Debug.Printf("Collection of SSH: %v\n", coll)
+	coll.DisplayShellAndOptions()
 }
