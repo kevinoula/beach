@@ -49,10 +49,6 @@ func (s *SSH) CreateSession() error {
 }
 
 func (s *SSH) StartSession() error {
-	//hostname = ""
-	//username = ""
-	//port = "22"
-
 	log.Printf("Attempting to SSH into %s...\n", s.Hostname)
 	err := s.CreateSession()
 	if err != nil {

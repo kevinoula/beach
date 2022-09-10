@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/kevinoula/beach/log"
 	"github.com/kevinoula/beach/shell"
+	"golang.org/x/crypto/ssh/terminal"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -76,12 +77,6 @@ func InitCollection() Collection {
 	return newColl
 }
 
-type Credentials struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Hostname string `json:"hostname"`
-}
-
 // AddShell takes some credentials and adds them to the existing collection of SSH configurations. Credentials consist
 // of a username, password, and a hostname. The password is encoded.
 func (c *Collection) AddShell(ssh shell.SSH) {
@@ -131,6 +126,7 @@ func (c Collection) DisplayShellAndOptions() {
 		fmt.Println()
 
 		var in string
+		fmt.Printf("$ ")
 		_, _ = fmt.Scanf("%s", &in)
 		matched, _ := regexp.MatchString(".*(@).*", in)
 		if matched { // Connect to a new SSH session
@@ -138,12 +134,11 @@ func (c Collection) DisplayShellAndOptions() {
 			newUsername, newHostname := input[0], input[1]
 			log.Debug.Printf("Detected new inputs username %s and hostname %s.", newUsername, newHostname)
 
-			var newPassword string
 			fmt.Println("Enter a password:")
-			_, _ = fmt.Scanf("%s", &newPassword)
-			encodedPass := base64.StdEncoding.EncodeToString([]byte(newPassword)) // Passwords should always be encoded
+			newPassword, _ := terminal.ReadPassword(0)
+			encodedPass := base64.StdEncoding.EncodeToString(newPassword) // Passwords should always be encoded
+
 			newSSH := shell.SSH{Hostname: newHostname, Username: newUsername, Password: encodedPass}
-			//newCreds := Credentials{Hostname: newHostname, Username: newUsername, Password: encodedPass}
 			c.AddShell(newSSH)
 			err := newSSH.StartSession()
 			if err != nil {
