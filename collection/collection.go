@@ -151,14 +151,13 @@ func (c Collection) DisplayShellAndOptions() {
 
 			newSSH := shell.SSH{Hostname: newHostname, Username: newUsername, Password: encodedPass}
 			err := newSSH.StartSession()
-			if err != nil {
+			if err != nil { // Any errors will not add the shell to the collection
 				log.Err.Printf("Error starting session: %v\n", err)
 				continue
 			}
 			c.AddShell(newSSH)
 
 		} else if connectionName, found := options[in]; found { // Connect to a previously stored SSH session
-			fmt.Printf("Logging onto %s\n", connectionName)
 			newSSH := shell.SSH{Hostname: shells[connectionName]["hostname"], Username: shells[connectionName]["username"], Password: shells[connectionName]["password"]}
 			err := newSSH.StartSession()
 			if err != nil {
