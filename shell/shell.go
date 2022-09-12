@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	log "github.com/kevinoula/beach/log"
+	"github.com/kevinoula/beach/log"
 	"golang.org/x/crypto/ssh"
 	"io"
 	"os"
@@ -153,5 +153,6 @@ func (s *SSH) StartSession() error {
 			return nil
 		}
 		wr <- []byte(text + "\n")
+		time.Sleep(time.Second * 1) // short input delay to allow output to populate
 	}
 }
