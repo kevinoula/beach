@@ -125,7 +125,7 @@ func (c Collection) DisplayShellAndOptions() {
 		i := 0
 		options := map[string]string{} // i.e. maps `0` to `username@hostname.com`
 		for connectionName := range shells {
-			fmt.Printf("(%d) %s", i, connectionName)
+			fmt.Printf("(%d) %s\n", i, connectionName)
 			options[strconv.Itoa(i)] = connectionName
 			i++
 		}
