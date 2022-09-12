@@ -93,9 +93,11 @@ func (c *Collection) AddShell(ssh shell.SSH) {
 	if len(c.ShellCollection.Shells) > 0 {                               // Add collected shells
 		shellConfig["shells"] = c.ShellCollection.Shells
 	}
-	shellConfig["shells"][ssh.Hostname] = map[string]string{ // Add the new credentials
+	key := fmt.Sprintf("%s@%s", ssh.Username, ssh.Hostname)
+	shellConfig["shells"][key] = map[string]string{ // Add the new credentials
 		"username": ssh.Username,
 		"password": ssh.Password,
+		"hostname": ssh.Hostname,
 	}
 
 	jsonStr, err := json.Marshal(shellConfig)
@@ -121,10 +123,10 @@ func (c Collection) DisplayShellAndOptions() {
 		shells := c.ShellCollection.Shells
 		fmt.Println("\nCollected shells:")
 		i := 0
-		options := map[string]string{}
-		for hostname, sh := range shells {
-			fmt.Printf("(%d) %s @ %s\n", i, sh["username"], hostname)
-			options[strconv.Itoa(i)] = hostname
+		options := map[string]string{} // i.e. maps `0` to `username@hostname.com`
+		for connectionName := range shells {
+			fmt.Printf("(%d) %s\n", i, connectionName)
+			options[strconv.Itoa(i)] = connectionName
 			i++
 		}
 
@@ -136,27 +138,31 @@ func (c Collection) DisplayShellAndOptions() {
 
 		var in string
 		fmt.Printf("$ ")
-		_, _ = fmt.Scanf("%s", &in)
+		_, _ = fmt.Scan(&in)
 		matched, _ := regexp.MatchString(".*(@).*", in)
 		if matched { // Connect to a new SSH session
 			input := strings.Split(in, "@")
 			newUsername, newHostname := input[0], input[1]
 			log.Debug.Printf("Detected new inputs username %s and hostname %s.", newUsername, newHostname)
+			if len(newUsername) == 0 || len(newHostname) == 0 {
+				log.Warn.Println("Invalid username@hostname.com input.")
+				continue
+			}
 
 			fmt.Println("Enter a password:")
 			newPassword, _ := terminal.ReadPassword(0)
 			encodedPass := base64.StdEncoding.EncodeToString(newPassword) // Passwords should always be encoded
 
 			newSSH := shell.SSH{Hostname: newHostname, Username: newUsername, Password: encodedPass}
-			c.AddShell(newSSH)
 			err := newSSH.StartSession()
-			if err != nil {
+			if err != nil { // Any errors will not add the shell to the collection
 				log.Err.Printf("Error starting session: %v\n", err)
+				continue
 			}
+			c.AddShell(newSSH)
 
-		} else if hostname, found := options[in]; found { // Connect to a previously stored SSH session
-			fmt.Printf("Logging onto %s\n", hostname)
-			newSSH := shell.SSH{Hostname: hostname, Username: shells[hostname]["username"], Password: shells[hostname]["password"]}
+		} else if connectionName, found := options[in]; found { // Connect to a previously stored SSH session
+			newSSH := shell.SSH{Hostname: shells[connectionName]["hostname"], Username: shells[connectionName]["username"], Password: shells[connectionName]["password"]}
 			err := newSSH.StartSession()
 			if err != nil {
 				log.Err.Printf("Error starting session: %v\n", err)

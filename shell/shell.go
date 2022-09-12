@@ -5,10 +5,11 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"github.com/kevinoula/beach/log"
 	"golang.org/x/crypto/ssh"
 	"io"
-	"log"
 	"os"
+	"time"
 )
 
 // SSH is an object which runs a single SSH session for a given user.
@@ -44,8 +45,9 @@ func (s *SSH) CreateSession() error {
 	trimmedPass := bytes.TrimSpace(decodedPass)
 
 	sshConfig := &ssh.ClientConfig{
-		User: s.Username,
-		Auth: []ssh.AuthMethod{ssh.Password(string(trimmedPass))},
+		User:    s.Username,
+		Auth:    []ssh.AuthMethod{ssh.Password(string(trimmedPass))},
+		Timeout: time.Second * 10,
 	}
 
 	sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey() // TODO validate host key
@@ -67,10 +69,10 @@ func (s *SSH) CreateSession() error {
 
 // StartSession uses the SSH client and session to begin serving input and outputs from the user to the remote server and back.
 func (s *SSH) StartSession() error {
-	log.Printf("Attempting to SSH into %s...\n", s.Hostname)
+	log.Info.Printf("Attempting to SSH into %s@%s...\n", s.Username, s.Hostname)
 	err := s.CreateSession()
 	if err != nil {
-		return fmt.Errorf("error connecting to host: %v\n", err)
+		return fmt.Errorf("creating session resulted in %v\n", err)
 	}
 
 	// Defer closing client and session
@@ -84,17 +86,17 @@ func (s *SSH) StartSession() error {
 
 	s.stdin, err = s.session.StdinPipe()
 	if err != nil {
-		log.Fatalf("error connecting stdin to pipe: %v\n", err)
+		return fmt.Errorf("connecting stdin to pipe resulted in %v\n", err)
 	}
 
 	s.stdout, err = s.session.StdoutPipe()
 	if err != nil {
-		log.Fatalf("error connecting stdout to pipe: %v\n", err)
+		return fmt.Errorf("connecting stdout to pipe resulted in %v\n", err)
 	}
 
 	s.stderr, err = s.session.StderrPipe()
 	if err != nil {
-		log.Fatalf("error connecting stdout to pipe: %v\n", err)
+		return fmt.Errorf("connecting stdout to pipe resulted in %v\n", err)
 	}
 
 	// go routine to pass stdin to shell stdin
@@ -105,7 +107,7 @@ func (s *SSH) StartSession() error {
 			case d := <-wr:
 				_, err := s.stdin.Write(d)
 				if err != nil {
-					fmt.Printf("error writing to stdin: %v\n", err)
+					log.Err.Printf("writing to stdin resulted in %v\n", err)
 					break
 				}
 			}
@@ -123,9 +125,9 @@ func (s *SSH) StartSession() error {
 				copy(raw, rcv)
 				fmt.Println(string(raw))
 			} else if scanner.Err() != nil {
-				fmt.Printf("error scanning: %v\n", scanner.Err())
+				log.Err.Printf("error scanning: %v\n", scanner.Err())
 			} else {
-				fmt.Printf("\nio.EOF")
+				log.Err.Println("io.EOF")
 				break
 			}
 		}
@@ -143,7 +145,6 @@ func (s *SSH) StartSession() error {
 	_ = s.session.Shell()
 
 	for {
-
 		fmt.Printf("%s@%s $ ", s.Username, s.Hostname)
 		scanner := bufio.NewScanner(os.Stdin)
 		scanner.Scan()
@@ -152,8 +153,6 @@ func (s *SSH) StartSession() error {
 			return nil
 		}
 		wr <- []byte(text + "\n")
-
+		time.Sleep(time.Second * 1) // short input delay to allow output to populate
 	}
-
-	return nil
 }
