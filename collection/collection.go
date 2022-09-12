@@ -138,12 +138,16 @@ func (c Collection) DisplayShellAndOptions() {
 
 		var in string
 		fmt.Printf("$ ")
-		_, _ = fmt.Scanf("%s", &in)
+		_, _ = fmt.Scan(&in)
 		matched, _ := regexp.MatchString(".*(@).*", in)
 		if matched { // Connect to a new SSH session
 			input := strings.Split(in, "@")
 			newUsername, newHostname := input[0], input[1]
 			log.Debug.Printf("Detected new inputs username %s and hostname %s.", newUsername, newHostname)
+			if len(newUsername) == 0 || len(newHostname) == 0 {
+				log.Warn.Println("Invalid username@hostname.com input.")
+				continue
+			}
 
 			fmt.Println("Enter a password:")
 			newPassword, _ := terminal.ReadPassword(0)
