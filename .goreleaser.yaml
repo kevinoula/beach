@@ -3,9 +3,7 @@ before:
     - git config --global --replace-all url.git@github.com:.insteadOf https://github.com/
     - go mod tidy
 builds:
-  - env:
-      - CGO_ENABLED=0
-    goos:
+  - goos:
       - linux
       - darwin
     ldflags:
