@@ -27,7 +27,7 @@ func main() {
 	flag.Parse()
 
 	if flgVersion {
-		fmt.Printf("Beach CLI version %s (%.8s) built on %s by %s", Version, Commit, Date, BuiltBy)
+		fmt.Printf("Beach CLI version %s (%.8s) built on %s by %s\n", Version, Commit, Date, BuiltBy)
 		return
 	}
 
