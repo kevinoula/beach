@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/kevinoula/beach/collection"
-	log "github.com/kevinoula/beach/log"
+	"github.com/kevinoula/beach/log"
 )
 
 var flgVersion bool
