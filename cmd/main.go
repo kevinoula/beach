@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/kevinoula/beach/collection"
-	log "github.com/kevinoula/beach/log"
+	"github.com/kevinoula/beach/log"
 )
 
 var flgVersion bool
@@ -27,12 +27,11 @@ func main() {
 	flag.Parse()
 
 	if flgVersion {
-		fmt.Println(Version)
+		fmt.Printf("Beach CLI version %s (%.8s) built on %s by %s\n", Version, Commit, Date, BuiltBy)
 		return
 	}
 
 	log.Init(log.LoggingConfig{EnableDebug: flgDebug})
-	log.Info.Printf("Beach CLI version %s (%.8s) built on %s by %s", Version, Commit, Date, BuiltBy)
 
 	// See past shells, connect to a new shell, or exit
 	coll := collection.InitCollection()

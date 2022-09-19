@@ -35,8 +35,31 @@ type SSH struct {
 	// stdout is the IO reader for the SSH session which reads the remote server output.
 	stdout io.Reader
 
-	// stderr is the IO reader for the SSH session which reads errors from the remote server output
+	// stderr is the IO reader for the SSH session which reads errors from the remote server output.
 	stderr io.Reader
+
+	// cmdHistory is a stack containing the user's recent cmd history.
+	cmdHistory []string
+}
+
+// addCmdToStack adds a user provided cmd input into the SSH's command history.
+func (s *SSH) addCmdToStack(cmd string) {
+	// Store only the last 5 commands
+	if len(s.cmdHistory) > 4 {
+		s.cmdHistory = s.cmdHistory[1:]
+	}
+	s.cmdHistory = append(s.cmdHistory, cmd)
+}
+
+// displayCmdHistory prints out the user's input history for an ongoing SSH session.
+func (s *SSH) displayCmdHistory() {
+	// Print all entered cmd from the top to bottom of the stack
+	c := 1
+	fmt.Println("User cmd history:")
+	for i := len(s.cmdHistory); i > 0; i-- {
+		fmt.Printf("(%d) %s\n", c, s.cmdHistory[i-1])
+		c++
+	}
 }
 
 // CreateSession creates all the necessary components to begin an SSH session with a remote server.
@@ -143,16 +166,25 @@ func (s *SSH) StartSession() error {
 
 	// Open SSH session
 	_ = s.session.Shell()
-
+	fmt.Printf("Connected to %s\n", s.Hostname)
+	fmt.Println("* Enter `hist` to see user cmd history")
+	fmt.Println("* Enter `exit` to end SSH session")
 	for {
 		fmt.Printf("%s@%s $ ", s.Username, s.Hostname)
 		scanner := bufio.NewScanner(os.Stdin)
 		scanner.Scan()
 		text := scanner.Text()
-		if text == "exit" {
+		switch text {
+		case "hist":
+			s.displayCmdHistory()
+
+		case "exit":
 			return nil
+
+		default:
+			s.addCmdToStack(text)
+			wr <- []byte(text + "\n")
+			time.Sleep(time.Second * 1) // short input delay to allow output to populate
 		}
-		wr <- []byte(text + "\n")
-		time.Sleep(time.Second * 1) // short input delay to allow output to populate
 	}
 }
